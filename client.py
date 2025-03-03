@@ -124,11 +124,8 @@ class Client:
         if status_code in cls.redirect_status_codes:
             return cls._redirect(response, max_redirects, connection, method, headers, json_data, data)
 
-        # Detect compression and decode it
-        raw_data = response.read()
-
-        # Decode response
-        decoded_payload = raw_data.decode("utf-8", errors="replace")  # Avoid Unicode errors
+        # Decoding payload
+        decoded_payload = cls._decode_payload(response)
 
         connection.close()
         result = Response(
