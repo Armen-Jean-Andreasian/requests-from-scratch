@@ -1,4 +1,5 @@
 import http.client
+import urllib.parse
 from urllib.parse import urlparse
 import json
 import gzip
@@ -41,13 +42,13 @@ class Client:
     }
 
     @staticmethod
-    def _connect(raw_url: str):
-        parsed_url = urlparse(raw_url)
-        scheme = parsed_url.scheme or "http"
-        host = parsed_url.netloc
+    def _connect(raw_url: str) -> tuple[http.client.HTTPSConnection | http.client.HTTPConnection, str]:
+        parsed_url: urllib.parse.ParseResult = urlparse(raw_url)
+        scheme: str = parsed_url.scheme or "http"
+        host: str = parsed_url.netloc
 
         # Get the full request path (including query params)
-        path = parsed_url.path or "/"
+        path: str = parsed_url.path or "/"
         if parsed_url.query:
             path += "?" + parsed_url.query
 
