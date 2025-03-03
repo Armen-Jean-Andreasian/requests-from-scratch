@@ -118,14 +118,14 @@ class Client:
 
         # Get response
         response: http.client.HTTPResponse = connection.getresponse()
-        status_code = response.status
+        status_code: int = response.status
 
         # Handle redirects
         if status_code in cls.redirect_status_codes:
             return cls._redirect(response, max_redirects, connection, method, headers, json_data, data)
 
         # Decoding payload
-        decoded_payload = cls._decode_payload(response)
+        decoded_payload: str = cls._decode_payload(response)
 
         connection.close()
         result = Response(
