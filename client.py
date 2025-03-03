@@ -32,6 +32,9 @@ class Response:
 
 
 class Client:
+    redirect_status_codes = (301, 302, 307, 308)
+
+
     default_headers = {
         "User-Agent": "python-custom-client/1.0",
         "Accept-Encoding": "gzip, deflate",
@@ -60,6 +63,41 @@ class Client:
 
         return connection, path
 
+
+    @classmethod
+    def _redirect(
+        cls,
+        response: http.client.HTTPResponse,
+        max_redirects: int,
+        connection,
+        method,
+        headers,
+        json_data,
+        data,
+    ):
+        new_url = response.getheader("Location")
+        if not new_url:
+            raise RuntimeError(f"Redirect ({response.status}) but no Location header")
+        connection.close()
+        return cls._request(method, new_url, headers, json_data, data, max_redirects - 1)
+
+
+
+    @classmethod
+    def _decode_payload(
+        cls,
+        response: http.client.HTTPResponse,
+        max_redirects: int,
+        connection,
+        method,
+        headers,
+        json_data,
+        data,
+
+    ):
+
+
+
     @classmethod
     def _request(cls, method: str, url: str, headers=None, json_data=None, data=None, max_redirects=5):
         if max_redirects < 0:
@@ -83,17 +121,12 @@ class Client:
         connection.request(method.upper(), path, body=data, headers=headers)
 
         # Get response
-        response = connection.getresponse()
+        response: http.client.HTTPResponse = connection.getresponse()
         status_code = response.status
 
-        # Handle redirects (301, 302, 307, 308)
-        if status_code in (301, 302, 307, 308):
-            new_url = response.getheader("Location")
-            if not new_url:
-                raise RuntimeError(f"Redirect ({status_code}) but no Location header")
-
-            connection.close()
-            return cls._request(method, new_url, headers, json_data, data, max_redirects - 1)
+        # Handle redirects
+        if status_code in cls.redirect_status_codes:
+            return cls._redirect(response, max_redirects, connection, method, headers, json_data, data)
 
         # Detect compression and decode it
         raw_data = response.read()
