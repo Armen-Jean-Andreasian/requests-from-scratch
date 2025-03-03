@@ -66,10 +66,10 @@ class Client:
         cls,
         response: http.client.HTTPResponse,
         max_redirects: int,
-        connection,
-        method,
-        headers,
-        json_data,
+        connection: http.client.HTTPSConnection | http.client.HTTPConnection,
+        method: str,
+        headers: dict,
+        json_data: dict,
         data,
     ):
         new_url = response.getheader("Location")
@@ -95,23 +95,23 @@ class Client:
         return decoded_payload
 
     @classmethod
-    def _request(cls, method: str, url: str, headers=None, json_data=None, data=None, max_redirects=5):
+    def _request(cls, method: str, url: str, headers=None, json_data: dict = None, data=None, max_redirects=5):
         if max_redirects < 0:
             raise RuntimeError("Too many redirects")
 
         connection, path = cls._connect(url)
 
         # Merge user-provided headers
-        headers = {**cls.default_headers, **(headers or {})}
+        headers: dict = {**cls.default_headers, **(headers or {})}
 
         # Handle JSON data
         if json_data is not None:
-            data = json.dumps(json_data)
+            data: str = json.dumps(json_data)
             headers["Content-Type"] = "application/json"
 
         # Convert data to bytes if it's a string
         if isinstance(data, str):
-            data = data.encode()
+            data: bytes = data.encode()
 
         # Send request
         connection.request(method.upper(), path, body=data, headers=headers)
