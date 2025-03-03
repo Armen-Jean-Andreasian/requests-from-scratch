@@ -30,10 +30,8 @@ class Response:
         )
 
 
-
 class Client:
     redirect_status_codes = (301, 302, 307, 308)
-
 
     default_headers = {
         "User-Agent": "python-custom-client/1.0",
@@ -63,7 +61,6 @@ class Client:
 
         return connection, path
 
-
     @classmethod
     def _redirect(
         cls,
@@ -81,22 +78,21 @@ class Client:
         connection.close()
         return cls._request(method, new_url, headers, json_data, data, max_redirects - 1)
 
-
-
     @classmethod
-    def _decode_payload(
-        cls,
-        response: http.client.HTTPResponse,
-        max_redirects: int,
-        connection,
-        method,
-        headers,
-        json_data,
-        data,
+    def _decode_payload(cls, response: http.client.HTTPResponse, ) -> str:
+        raw_data: bytes = response.read()
+        encoding: str = response.getheader("Content-Encoding")
 
-    ):
+        if encoding == "gzip":
+            raw_data: bytes = gzip.decompress(raw_data)
+        elif encoding == "deflate":
+            raw_data: bytes = zlib.decompress(raw_data)
+        else:
+            raise RuntimeError(f"Could not decode encoding: {encoding}")
 
-
+        # Decode response
+        decoded_payload: str = raw_data.decode("utf-8", errors="replace")
+        return decoded_payload
 
     @classmethod
     def _request(cls, method: str, url: str, headers=None, json_data=None, data=None, max_redirects=5):
@@ -130,11 +126,6 @@ class Client:
 
         # Detect compression and decode it
         raw_data = response.read()
-        encoding = response.getheader("Content-Encoding")
-        if encoding == "gzip":
-            raw_data = gzip.decompress(raw_data)
-        elif encoding == "deflate":
-            raw_data = zlib.decompress(raw_data)
 
         # Decode response
         decoded_payload = raw_data.decode("utf-8", errors="replace")  # Avoid Unicode errors
@@ -155,6 +146,7 @@ class Client:
     @classmethod
     def post(cls, url: str, headers=None, data=None, json_data=None):
         return cls._request(method="POST", url=url, headers=headers, data=data, json_data=json_data)
+
 
 # Example Usage
 response = Client.get("https://stackoverflow.com/questions/78075334/github-copilot-issue-on-pycharm")
